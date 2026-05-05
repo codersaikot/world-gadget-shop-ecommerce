@@ -1,5 +1,20 @@
 const mongoose = require('mongoose');
 
+const generateSlug = (value) =>
+  value
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .replace(/-{2,}/g, '-');
+
+const applySlug = (doc) => {
+  if (doc && doc.name && (!doc.slug || !doc.slug.toString().trim())) {
+    doc.slug = generateSlug(doc.name);
+  }
+};
+
 // ─── Category ─────────────────────────────────────────────────────────────────
 const categorySchema = new mongoose.Schema(
   {
@@ -13,9 +28,12 @@ const categorySchema = new mongoose.Schema(
 );
 
 categorySchema.pre('save', function (next) {
-  if (this.isModified('name')) {
-    this.slug = this.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  }
+  applySlug(this);
+  next();
+});
+
+categorySchema.pre('insertMany', function (next, docs) {
+  docs.forEach(applySlug);
   next();
 });
 
@@ -32,9 +50,12 @@ const brandSchema = new mongoose.Schema(
 );
 
 brandSchema.pre('save', function (next) {
-  if (this.isModified('name')) {
-    this.slug = this.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  }
+  applySlug(this);
+  next();
+});
+
+brandSchema.pre('insertMany', function (next, docs) {
+  docs.forEach(applySlug);
   next();
 });
 

@@ -7,6 +7,15 @@ const User = require('../models/User');
 const Product = require('../models/Product');
 const { Category, Brand, Coupon } = require('../models/index');
 
+const generateSlug = (text) =>
+  text
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .replace(/-{2,}/g, '-');
+
 const connectDB = async () => {
   await mongoose.connect(process.env.MONGO_URI);
   console.log('MongoDB Connected for seeding...');
@@ -42,24 +51,34 @@ const seedData = async () => {
   console.log('Users created');
 
   // Create Categories
-  const categories = await Category.insertMany([
-    { name: 'Smartphones', description: 'Latest smartphones and mobile phones', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400' },
-    { name: 'Laptops', description: 'Laptops and notebooks', image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400' },
-    { name: 'Headphones', description: 'Headphones, earbuds and audio accessories', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400' },
-    { name: 'Smartwatches', description: 'Smartwatches and fitness trackers', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400' },
-    { name: 'Tablets', description: 'Tablets and iPads', image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400' },
-    { name: 'Accessories', description: 'Gadget accessories and peripherals', image: 'https://images.unsplash.com/photo-1625467096740-1f0f06a91e13?w=400' },
-  ]);
+  const categories = await Category.insertMany(
+    [
+      { name: 'Smartphones', description: 'Latest smartphones and mobile phones', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400' },
+      { name: 'Laptops', description: 'Laptops and notebooks', image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400' },
+      { name: 'Headphones', description: 'Headphones, earbuds and audio accessories', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400' },
+      { name: 'Smartwatches', description: 'Smartwatches and fitness trackers', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400' },
+      { name: 'Tablets', description: 'Tablets and iPads', image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400' },
+      { name: 'Accessories', description: 'Gadget accessories and peripherals', image: 'https://images.unsplash.com/photo-1625467096740-1f0f06a91e13?w=400' },
+    ].map((category) => ({
+      ...category,
+      slug: generateSlug(category.name),
+    }))
+  );
 
   // Create Brands
-  const brands = await Brand.insertMany([
-    { name: 'Apple', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg' },
-    { name: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg' },
-    { name: 'Sony', logo: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Sony_logo.svg' },
-    { name: 'Xiaomi', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/29/Xiaomi_logo.svg' },
-    { name: 'OnePlus', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/OnePlus_logo.svg/2560px-OnePlus_logo.svg.png' },
-    { name: 'Dell', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/18/Dell_logo_2016.svg' },
-  ]);
+  const brands = await Brand.insertMany(
+    [
+      { name: 'Apple', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg' },
+      { name: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg' },
+      { name: 'Sony', logo: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Sony_logo.svg' },
+      { name: 'Xiaomi', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/29/Xiaomi_logo.svg' },
+      { name: 'OnePlus', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/OnePlus_logo.svg/2560px-OnePlus_logo.svg.png' },
+      { name: 'Dell', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/18/Dell_logo_2016.svg' },
+    ].map((brand) => ({
+      ...brand,
+      slug: generateSlug(brand.name),
+    }))
+  );
 
   console.log('Categories and brands created');
 
@@ -263,9 +282,182 @@ const seedData = async () => {
       ],
       tags: ['tablet', 'apple', 'ipad', 'creative'],
     },
+    {
+      name: 'Google Pixel 8 Pro',
+      description: 'Google Pixel 8 Pro with Tensor G3 chip, advanced AI features, and the best computational photography in a smartphone.',
+      shortDescription: 'Tensor G3, AI magic eraser, 6.7" display',
+      price: 98000,
+      discountPrice: 88000,
+      stock: 22,
+      category: categories[0]._id,
+      brand: brands[3]._id,
+      images: [
+        { url: 'https://images.unsplash.com/photo-1592286927505-1def25e85d1f?w=600' },
+      ],
+      rating: 4.7,
+      numReviews: 201,
+      isFeatured: true,
+      specifications: [
+        { key: 'Display', value: '6.7" OLED QHD+' },
+        { key: 'Processor', value: 'Google Tensor G3' },
+        { key: 'RAM', value: '12GB' },
+        { key: 'Storage', value: '512GB' },
+        { key: 'Battery', value: '5050mAh' },
+        { key: 'Camera', value: '50MP + 48MP + 48MP' },
+      ],
+      tags: ['flagship', 'android', 'ai', 'photography'],
+    },
+    {
+      name: 'OnePlus 12',
+      description: 'OnePlus 12 with Snapdragon 8 Gen 3 leading version, 100W SUPERVOOC charging, and fluid Oxygen OS experience.',
+      shortDescription: '100W charging, Snapdragon 8 Gen 3, 120Hz fluid display',
+      price: 68000,
+      discountPrice: 60000,
+      stock: 35,
+      category: categories[0]._id,
+      brand: brands[4]._id,
+      images: [
+        { url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600' },
+      ],
+      rating: 4.6,
+      numReviews: 156,
+      isFeatured: false,
+      specifications: [
+        { key: 'Display', value: '6.7" AMOLED 120Hz' },
+        { key: 'Processor', value: 'Snapdragon 8 Gen 3 Leading' },
+        { key: 'RAM', value: '12GB' },
+        { key: 'Storage', value: '256GB' },
+        { key: 'Battery', value: '5400mAh + 100W' },
+        { key: 'Camera', value: '50MP + 48MP + 48MP' },
+      ],
+      tags: ['flagship', 'android', 'fast-charging', 'performance'],
+    },
+    {
+      name: 'ASUS ROG Ally X',
+      description: 'ASUS ROG Ally X gaming handheld with custom APU, 24GB RAM, and impressive battery for AAA gaming on the go.',
+      shortDescription: 'Gaming handheld, 24GB RAM, Steam Deck competitor',
+      price: 75000,
+      discountPrice: 68000,
+      stock: 12,
+      category: categories[1]._id,
+      brand: brands[3]._id,
+      images: [
+        { url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600' },
+      ],
+      rating: 4.5,
+      numReviews: 78,
+      isFeatured: true,
+      specifications: [
+        { key: 'Display', value: '7" IPS 1080p' },
+        { key: 'Processor', value: 'Custom APU' },
+        { key: 'RAM', value: '24GB LPDDR5X' },
+        { key: 'Storage', value: '1TB SSD' },
+        { key: 'Battery', value: '10100mAh' },
+      ],
+      tags: ['gaming', 'handheld', 'portable', 'aaa-gaming'],
+    },
+    {
+      name: 'Samsung Galaxy Buds3 Pro',
+      description: 'Samsung Galaxy Buds3 Pro with premium ANC, IPX7 water resistance, and seamless Galaxy ecosystem integration.',
+      shortDescription: 'Premium ANC earbuds, IPX7 water resistant, Galaxy sync',
+      price: 16500,
+      discountPrice: 13500,
+      stock: 50,
+      category: categories[2]._id,
+      brand: brands[1]._id,
+      images: [
+        { url: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=600' },
+      ],
+      rating: 4.6,
+      numReviews: 234,
+      isFeatured: false,
+      specifications: [
+        { key: 'Driver', value: '11mm Woofer + 6.5mm Tweeter' },
+        { key: 'ANC', value: 'Active Noise Cancellation' },
+        { key: 'Battery', value: '6 hours (26 with case)' },
+        { key: 'Water Resistance', value: 'IPX7' },
+      ],
+      tags: ['earbuds', 'samsung', 'wireless', 'anc'],
+    },
+    {
+      name: 'Canon EOS R6',
+      description: 'Canon EOS R6 professional mirrorless camera with 20MP sensor, 4K 60fps video, and professional RF lens ecosystem.',
+      shortDescription: '20MP full-frame, 4K 60fps, professional mirrorless',
+      price: 285000,
+      discountPrice: 265000,
+      stock: 5,
+      category: categories[5]._id,
+      brand: brands[2]._id,
+      images: [
+        { url: 'https://images.unsplash.com/photo-1600335895917-f47e46e36b58?w=600' },
+      ],
+      rating: 4.9,
+      numReviews: 45,
+      isFeatured: true,
+      specifications: [
+        { key: 'Sensor', value: 'Full-frame 20MP CMOS' },
+        { key: 'Video', value: '4K 60fps' },
+        { key: 'Shutter Speed', value: '1/8000 sec' },
+        { key: 'AF Points', value: '1053' },
+        { key: 'Battery', value: 'LP-E6NH' },
+      ],
+      tags: ['camera', 'professional', 'mirrorless', '4k'],
+    },
+    {
+      name: 'Samsung 4K UHD Monitor 32"',
+      description: '32" Samsung UHD monitor with 4K resolution, 144Hz refresh rate, quantum dot technology for professional and gaming use.',
+      shortDescription: '32" 4K, 144Hz, Quantum Dot, USB-C',
+      price: 78000,
+      discountPrice: 69000,
+      stock: 8,
+      category: categories[5]._id,
+      brand: brands[1]._id,
+      images: [
+        { url: 'https://images.unsplash.com/photo-1527814050087-3793815479db?w=600' },
+      ],
+      rating: 4.7,
+      numReviews: 112,
+      isFeatured: false,
+      specifications: [
+        { key: 'Display', value: '32" VA Quantum Dot' },
+        { key: 'Resolution', value: '3840 x 2160 (4K)' },
+        { key: 'Refresh Rate', value: '144Hz' },
+        { key: 'Response Time', value: '1ms' },
+        { key: 'USB-C', value: '90W Power Delivery' },
+      ],
+      tags: ['monitor', '4k', 'gaming', 'professional', 'usb-c'],
+    },
+    {
+      name: 'Anker PowerCore 26800mAh',
+      description: 'Anker PowerCore 26800mAh with dual USB ports, 100W USB-C, and can charge MacBook and multiple devices simultaneously.',
+      shortDescription: 'Huge capacity, dual USB + USB-C, 100W output',
+      price: 8500,
+      discountPrice: 6800,
+      stock: 85,
+      category: categories[5]._id,
+      brand: brands[3]._id,
+      images: [
+        { url: 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=600' },
+      ],
+      rating: 4.8,
+      numReviews: 567,
+      isFeatured: false,
+      specifications: [
+        { key: 'Capacity', value: '26800mAh (97Wh)' },
+        { key: 'Output Ports', value: 'USB-C (100W) + 2x USB-A' },
+        { key: 'Weight', value: '550g' },
+        { key: 'Features', value: 'LED Display, Multi-Protocol Support' },
+      ],
+      tags: ['powerbank', 'portable', 'charging', 'travel'],
+    },
   ];
 
-  await Product.insertMany(products);
+  const productsWithSlugs = products.map((product, index) => ({
+    ...product,
+    slug: product.slug || `${generateSlug(product.name)}-${Date.now()}-${index + 1}`,
+  }));
+
+  await Product.insertMany(productsWithSlugs);
   console.log('Products created');
 
   // Create Coupons

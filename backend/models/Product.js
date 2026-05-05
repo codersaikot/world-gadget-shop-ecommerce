@@ -60,14 +60,29 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const generateSlug = (value) =>
+  value
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .replace(/-{2,}/g, '-');
+
 // Generate slug from name
 productSchema.pre('save', function (next) {
-  if (this.isModified('name')) {
-    this.slug = this.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '') + '-' + Date.now();
+  if (this.isModified('name') || !this.slug) {
+    this.slug = `${generateSlug(this.name)}-${Date.now()}`;
   }
+  next();
+});
+
+productSchema.pre('insertMany', function (next, docs) {
+  docs.forEach((doc) => {
+    if ((!doc.slug || !doc.slug.toString().trim()) && doc.name) {
+      doc.slug = `${generateSlug(doc.name)}-${Date.now()}`;
+    }
+  });
   next();
 });
 
