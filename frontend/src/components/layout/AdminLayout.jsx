@@ -20,6 +20,7 @@ const navLinks = [
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -34,9 +35,18 @@ export default function AdminLayout() {
     <aside className="w-60 bg-gray-900 min-h-screen flex flex-col">
       <div className="p-4 border-b border-gray-800">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <MdElectricalServices className="text-white text-lg" />
-          </div>
+          {imageError ? (
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <MdElectricalServices className="text-white text-lg" />
+            </div>
+          ) : (
+            <img
+              src="/wgs-logo.png"
+              alt="World Gadget Shop"
+              className="h-12 w-auto object-contain rounded-md"
+              onError={() => setImageError(true)}
+            />
+          )}
           <div>
             <p className="text-white font-bold text-sm font-display">World Gadget</p>
             <p className="text-blue-400 text-xs">Admin Panel</p>

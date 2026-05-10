@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchProduct } from '../store/slices/otherSlices';
 import { addToCart } from '../store/slices/otherSlices';
 import { toggleWishlist } from '../store/slices/authSlice';
-import { formatCurrency, formatDate, getProductImage } from '../utils/helpers';
+import { formatCurrency, formatDate, getProductImage, handleProductImageError } from '../utils/helpers';
 import StarRating from '../components/common/StarRating';
 import Spinner from '../components/common/Spinner';
 import api from '../utils/api';
@@ -27,7 +27,8 @@ export default function ProductDetailPage() {
   useEffect(() => {
     dispatch(fetchProduct(id));
     api.get(`/reviews/${id}`).then((r) => setReviews(r.data.data));
-  }, [id]);
+    setActiveImg(0);
+  }, [dispatch, id]);
 
   if (loading) return <Spinner center />;
   if (!product) return <div className="text-center py-20 text-gray-500">Product not found</div>;
@@ -35,6 +36,8 @@ export default function ProductDetailPage() {
   const hasDiscount = product.discountPrice > 0;
   const displayPrice = hasDiscount ? product.discountPrice : product.price;
   const discount = hasDiscount ? Math.round(((product.price - product.discountPrice) / product.price) * 100) : 0;
+  const productImages = product.images?.length ? product.images : [{ url: getProductImage(product) }];
+  const activeImage = productImages[activeImg]?.url || getProductImage(product);
 
   const handleAddToCart = () => {
     if (!user) { toast.error('Please login to add to cart'); return; }
@@ -68,15 +71,26 @@ export default function ProductDetailPage() {
         {/* Images */}
         <div>
           <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 mb-3">
-            <img src={product.images?.[activeImg]?.url || getProductImage(product)} alt={product.name}
-              className="w-full h-full object-cover" />
+            <img
+              src={activeImage}
+              alt={product.name}
+              className="w-full h-full object-cover bg-gray-100"
+              loading="lazy"
+              onError={handleProductImageError}
+            />
           </div>
-          {product.images?.length > 1 && (
+          {productImages.length > 1 && (
             <div className="flex gap-2">
-              {product.images.map((img, i) => (
+              {productImages.map((img, i) => (
                 <button key={i} onClick={() => setActiveImg(i)}
                   className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${activeImg === i ? 'border-blue-500' : 'border-transparent'}`}>
-                  <img src={img.url} alt="" className="w-full h-full object-cover" />
+                  <img
+                    src={img.url || getProductImage(product)}
+                    alt={`${product.name} thumbnail ${i + 1}`}
+                    className="w-full h-full object-cover bg-gray-100"
+                    loading="lazy"
+                    onError={handleProductImageError}
+                  />
                 </button>
               ))}
             </div>

@@ -12,10 +12,18 @@ const uploadBufferToCloudinary = (buffer, options = {}) => {
   });
 };
 
+const setNoCacheHeaders = (res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.set('Surrogate-Control', 'no-store');
+};
+
 // @desc    Get all products with filters, search, pagination
 // @route   GET /api/products
 // @access  Public
 const getProducts = asyncHandler(async (req, res) => {
+  setNoCacheHeaders(res);
   const {
     search,
     category,
@@ -86,6 +94,7 @@ const getProducts = asyncHandler(async (req, res) => {
 // @route   GET /api/products/:id
 // @access  Public
 const getProduct = asyncHandler(async (req, res) => {
+  setNoCacheHeaders(res);
   const product = await Product.findById(req.params.id)
     .populate('category', 'name slug')
     .populate('brand', 'name logo');
@@ -102,6 +111,7 @@ const getProduct = asyncHandler(async (req, res) => {
 // @route   POST /api/products
 // @access  Admin
 const createProduct = asyncHandler(async (req, res) => {
+  setNoCacheHeaders(res);
   console.log('Create product request received');
   console.log('req.file:', req.file ? 'Present' : 'Not present');
   if (req.file) {
@@ -283,6 +293,7 @@ const deleteProduct = asyncHandler(async (req, res) => {
 // @route   GET /api/products/featured
 // @access  Public
 const getFeaturedProducts = asyncHandler(async (req, res) => {
+  setNoCacheHeaders(res);
   const products = await Product.find({ isFeatured: true, isActive: true })
     .populate('category', 'name')
     .populate('brand', 'name logo')

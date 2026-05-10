@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../utils/api';
+import { createProduct } from '../../store/slices/otherSlices';
 import toast from 'react-hot-toast';
 import Spinner from '../../components/common/Spinner';
 import ImageUpload from '../../components/common/ImageUpload';
@@ -18,6 +20,7 @@ const defaultForm = {
 
 export default function AdminProductForm() {
   const { id } = useParams();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
 
@@ -108,7 +111,7 @@ export default function AdminProductForm() {
         await api.put(`/products/${id}`, formData, config);
         toast.success('Product updated!');
       } else {
-        await api.post('/products', formData, config);
+        await dispatch(createProduct(formData)).unwrap();
         toast.success('Product created!');
       }
       navigate('/admin/products');

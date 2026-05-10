@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
-import { formatCurrency } from '../../utils/helpers';
+import { formatCurrency, PRODUCT_IMAGE_FALLBACK, handleProductImageError } from '../../utils/helpers';
 import Spinner from '../../components/common/Spinner';
 import toast from 'react-hot-toast';
 import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiStar } from 'react-icons/fi';
@@ -17,9 +17,16 @@ export default function AdminProducts() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const params = { page, limit: 15 };
+      const params = { page, limit: 15, _t: Date.now() };
       if (search) params.search = search;
-      const res = await api.get('/products', { params });
+      const res = await api.get('/products', {
+        params,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      });
       setProducts(res.data.data.products);
       setPagination(res.data.data.pagination);
     } catch { toast.error('Failed to load products'); }
@@ -87,8 +94,13 @@ export default function AdminProducts() {
                   <tr key={product._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <img src={product.images?.[0]?.url || 'https://placehold.co/50x50?text=P'} alt=""
-                          className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0" />
+                        <img
+                          src={product.images?.[0]?.url || PRODUCT_IMAGE_FALLBACK}
+                          alt={product.name}
+                          className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0"
+                          loading="lazy"
+                          onError={handleProductImageError}
+                        />
                         <div className="min-w-0">
                           <p className="font-medium text-gray-800 truncate max-w-[180px]">{product.name}</p>
                           <p className="text-gray-400 text-xs">{product.category?.name} · {product.brand?.name}</p>

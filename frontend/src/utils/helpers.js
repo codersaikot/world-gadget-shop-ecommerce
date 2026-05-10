@@ -1,3 +1,5 @@
+export const PRODUCT_IMAGE_FALLBACK = 'https://via.placeholder.com/400x400?text=No+Image';
+
 export const formatCurrency = (amount) => {
   if (amount === undefined || amount === null) return '৳0';
   return `৳${Number(amount).toLocaleString('en-BD')}`;
@@ -47,7 +49,13 @@ export const debounce = (fn, delay = 400) => {
 };
 
 export const getProductImage = (product) =>
-  product?.images?.[0]?.url || 'https://placehold.co/400x400?text=No+Image';
+  product?.images?.[0]?.url || PRODUCT_IMAGE_FALLBACK;
+
+export const handleProductImageError = (event) => {
+  if (event.currentTarget.src === PRODUCT_IMAGE_FALLBACK) return;
+  event.currentTarget.onerror = null;
+  event.currentTarget.src = PRODUCT_IMAGE_FALLBACK;
+};
 
 export const calcCartTotal = (items) =>
   items.reduce((sum, item) => sum + item.price * item.quantity, 0);

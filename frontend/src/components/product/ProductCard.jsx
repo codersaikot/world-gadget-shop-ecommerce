@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { FiHeart, FiShoppingCart, FiStar } from 'react-icons/fi';
 import { addToCart } from '../../store/slices/otherSlices';
 import { toggleWishlist } from '../../store/slices/authSlice';
-import { formatCurrency, getImageUrl, truncate } from '../../utils/helpers';
+import { formatCurrency, getProductImage, handleProductImageError, truncate } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 
 export default function ProductCard({ product }) {
@@ -34,10 +34,11 @@ export default function ProductCard({ product }) {
       {/* Image */}
       <div className="relative overflow-hidden bg-gray-50 aspect-square">
         <img
-          src={getImageUrl(product.images?.[0]?.url)}
+          src={getProductImage(product)}
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
+          onError={handleProductImageError}
         />
 
         {/* Badges */}

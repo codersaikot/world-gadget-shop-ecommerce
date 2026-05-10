@@ -22,6 +22,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -67,12 +68,23 @@ export default function Navbar() {
         <div className="flex items-center gap-4 h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <MdElectricalServices className="text-white text-lg" />
-            </div>
-            <span className="font-display font-bold text-gray-900 text-lg leading-tight hidden sm:block">
-              World<br className="hidden" /><span className="text-blue-600">Gadget</span>
-            </span>
+            {imageError ? (
+              <>
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <MdElectricalServices className="text-white text-lg" />
+                </div>
+                <span className="font-display font-bold text-gray-900 text-lg leading-tight hidden sm:block">
+                  World<br className="hidden" /><span className="text-blue-600">Gadget</span>
+                </span>
+              </>
+            ) : (
+              <img
+                src="/logo.png"
+                alt="World Gadget Shop"
+                className="h-16 w-auto object-contain"
+                onError={() => setImageError(true)}
+              />
+            )}
           </Link>
 
           {/* Search bar */}

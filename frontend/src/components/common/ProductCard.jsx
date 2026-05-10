@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../../store/slices/otherSlices';
 import { toggleWishlist } from '../../store/slices/authSlice';
-import { formatCurrency, getProductImage } from '../../utils/helpers';
+import { formatCurrency, getProductImage, handleProductImageError } from '../../utils/helpers';
 import { FiHeart, FiShoppingCart, FiStar } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
@@ -39,9 +39,9 @@ export default function ProductCard({ product }) {
           <img
             src={getProductImage(product)}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover bg-gray-100 group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
-            onError={(e) => { e.target.src = 'https://placehold.co/400x400?text=No+Image'; }}
+            onError={handleProductImageError}
           />
           {discount > 0 && (
             <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">

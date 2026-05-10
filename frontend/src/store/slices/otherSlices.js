@@ -2,6 +2,15 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 
+const buildNoCacheConfig = (params = {}) => ({
+  params: { ...params, _t: Date.now() },
+  headers: {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    Pragma: 'no-cache',
+    Expires: '0',
+  },
+});
+
 // ─── CART SLICE ───────────────────────────────────────────────────────────────
 export const fetchCart = createAsyncThunk('cart/fetch', async (_, { rejectWithValue }) => {
   try { const res = await api.get('/cart'); return res.data.data; }
@@ -61,19 +70,30 @@ export const cartReducer = cartSlice.reducer;
 // ─── PRODUCT SLICE ────────────────────────────────────────────────────────────
 export const fetchProducts = createAsyncThunk('products/fetch', async (params, { rejectWithValue }) => {
   try {
-    const res = await api.get('/products', { params });
+    const res = await api.get('/products', buildNoCacheConfig(params));
     return res.data.data;
   } catch (err) { return rejectWithValue(err.response?.data?.message); }
 });
 
 export const fetchFeaturedProducts = createAsyncThunk('products/featured', async (_, { rejectWithValue }) => {
-  try { const res = await api.get('/products/featured'); return res.data.data; }
+  try { const res = await api.get('/products/featured', buildNoCacheConfig()); return res.data.data; }
   catch (err) { return rejectWithValue(err.response?.data?.message); }
 });
 
 export const fetchProduct = createAsyncThunk('products/fetchOne', async (id, { rejectWithValue }) => {
-  try { const res = await api.get(`/products/${id}`); return res.data.data; }
+  try { const res = await api.get(`/products/${id}`, buildNoCacheConfig()); return res.data.data; }
   catch (err) { return rejectWithValue(err.response?.data?.message); }
+});
+
+export const createProduct = createAsyncThunk('products/create', async (formData, { rejectWithValue }) => {
+  try {
+    const res = await api.post('/products', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data.data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message);
+  }
 });
 
 const productSlice = createSlice({
@@ -95,7 +115,15 @@ const productSlice = createSlice({
       .addCase(fetchFeaturedProducts.fulfilled, (state, action) => { state.featured = action.payload; })
       .addCase(fetchProduct.pending, (state) => { state.loading = true; })
       .addCase(fetchProduct.fulfilled, (state, action) => { state.loading = false; state.currentProduct = action.payload; })
-      .addCase(fetchProduct.rejected, (state) => { state.loading = false; });
+      .addCase(fetchProduct.rejected, (state) => { state.loading = false; })
+      .addCase(createProduct.fulfilled, (state, action) => {
+        state.currentProduct = action.payload;
+        state.products = [action.payload, ...state.products];
+        if (state.pagination) {
+          state.pagination.total += 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit);
+        }
+      });
   },
 });
 
