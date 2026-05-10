@@ -1,5 +1,16 @@
 const asyncHandler = require('express-async-handler');
 const Product = require('../models/Product');
+const cloudinary = require('../config/cloudinary');
+
+const uploadBufferToCloudinary = (buffer, options = {}) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(options, (error, result) => {
+      if (error) return reject(error);
+      resolve(result);
+    });
+    uploadStream.end(buffer);
+  });
+};
 
 // @desc    Get all products with filters, search, pagination
 // @route   GET /api/products
@@ -91,30 +102,163 @@ const getProduct = asyncHandler(async (req, res) => {
 // @route   POST /api/products
 // @access  Admin
 const createProduct = asyncHandler(async (req, res) => {
-  const product = await Product.create(req.body);
+  console.log('Create product request received');
+  console.log('req.file:', req.file ? 'Present' : 'Not present');
+  if (req.file) {
+    console.log('File details:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      buffer: req.file.buffer ? 'Present' : 'Not present'
+    });
+  }
+  console.log('req.body:', req.body);
+
+  let imageUrl = '';
+  let publicId = '';
+
+  // Handle file upload if present
+  if (req.file) {
+    try {
+      console.log('Attempting Cloudinary upload...');
+      // Upload to Cloudinary using upload_stream for Buffer data
+      const result = await uploadBufferToCloudinary(req.file.buffer, {
+        folder: 'world-gadget-shop/products',
+        resource_type: 'image',
+        transformation: [
+          { width: 800, height: 800, crop: 'limit' },
+          { quality: 'auto' }
+        ]
+      });
+
+      imageUrl = result.secure_url;
+      publicId = result.public_id;
+      console.log('Cloudinary upload successful:', { imageUrl, publicId });
+    } catch (error) {
+      console.error('Cloudinary upload error details:', {
+        message: error.message,
+        http_code: error.http_code,
+        name: error.name,
+        stack: error.stack
+      });
+      res.status(500);
+      throw new Error(`Failed to upload image: ${error.message}`);
+    }
+  }
+
+  // Prepare product data
+  const productData = {
+    ...req.body,
+    images: imageUrl ? [{ url: imageUrl, public_id: publicId }] : [],
+  };
+
+  // Parse JSON fields if they come as strings
+  if (typeof productData.specifications === 'string') {
+    productData.specifications = JSON.parse(productData.specifications);
+  }
+  if (typeof productData.tags === 'string') {
+    productData.tags = productData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+  }
+
+  const product = await Product.create(productData);
   await product.populate('category', 'name slug');
   await product.populate('brand', 'name logo');
 
-  res.status(201).json({ success: true, message: 'Product created successfully', data: product });
+  res.status(201).json({
+    success: true,
+    message: 'Product created successfully',
+    data: product
+  });
 });
 
 // @desc    Update product
 // @route   PUT /api/products/:id
 // @access  Admin
 const updateProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  })
-    .populate('category', 'name slug')
-    .populate('brand', 'name logo');
+  console.log('Update product request received for ID:', req.params.id);
+  console.log('req.file:', req.file ? 'Present' : 'Not present');
+  if (req.file) {
+    console.log('File details:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      buffer: req.file.buffer ? 'Present' : 'Not present'
+    });
+  }
+  console.log('req.body:', req.body);
+
+  const product = await Product.findById(req.params.id);
 
   if (!product) {
     res.status(404);
     throw new Error('Product not found');
   }
 
-  res.json({ success: true, message: 'Product updated successfully', data: product });
+  let imageUrl = '';
+  let publicId = '';
+
+  // Handle file upload if present
+  if (req.file) {
+    try {
+      console.log('Attempting Cloudinary upload for update...');
+      // Delete old image from Cloudinary if exists
+      if (product.images && product.images.length > 0 && product.images[0].public_id) {
+        await cloudinary.uploader.destroy(product.images[0].public_id);
+      }
+
+      // Upload new image to Cloudinary using upload_stream for Buffer data
+      const result = await uploadBufferToCloudinary(req.file.buffer, {
+        folder: 'world-gadget-shop/products',
+        resource_type: 'image',
+        transformation: [
+          { width: 800, height: 800, crop: 'limit' },
+          { quality: 'auto' }
+        ]
+      });
+
+      imageUrl = result.secure_url;
+      publicId = result.public_id;
+      console.log('Cloudinary upload successful for update:', { imageUrl, publicId });
+    } catch (error) {
+      console.error('Cloudinary upload error details for update:', {
+        message: error.message,
+        http_code: error.http_code,
+        name: error.name,
+        stack: error.stack
+      });
+      res.status(500);
+      throw new Error(`Failed to upload image: ${error.message}`);
+    }
+  }
+
+  // Prepare update data
+  const updateData = { ...req.body };
+
+  // Parse JSON fields if they come as strings
+  if (typeof updateData.specifications === 'string') {
+    updateData.specifications = JSON.parse(updateData.specifications);
+  }
+  if (typeof updateData.tags === 'string') {
+    updateData.tags = updateData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+  }
+
+  // Update images if new image was uploaded
+  if (imageUrl) {
+    updateData.images = [{ url: imageUrl, public_id: publicId }];
+  }
+
+  const updatedProduct = await Product.findByIdAndUpdate(req.params.id, updateData, {
+    new: true,
+    runValidators: true,
+  })
+    .populate('category', 'name slug')
+    .populate('brand', 'name logo');
+
+  res.json({
+    success: true,
+    message: 'Product updated successfully',
+    data: updatedProduct
+  });
 });
 
 // @desc    Delete product

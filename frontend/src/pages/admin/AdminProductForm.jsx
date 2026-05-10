@@ -3,13 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import Spinner from '../../components/common/Spinner';
+import ImageUpload from '../../components/common/ImageUpload';
 import { FiPlus, FiTrash2, FiArrowLeft } from 'react-icons/fi';
 
 const defaultForm = {
   name: '', description: '', shortDescription: '',
   price: '', discountPrice: '', stock: '',
   category: '', brand: '',
-  images: [{ url: '' }],
+  imageFile: null, // For file upload
   specifications: [{ key: '', value: '' }],
   tags: '',
   isFeatured: false, isActive: true,
@@ -37,7 +38,7 @@ export default function AdminProductForm() {
           category: p.category?._id || '',
           brand: p.brand?._id || '',
           tags: p.tags?.join(', ') || '',
-          images: p.images?.length ? p.images : [{ url: '' }],
+          imageFile: null, // Reset file input
           specifications: p.specifications?.length ? p.specifications : [{ key: '', value: '' }],
         });
         setFetchLoading(false);
@@ -47,10 +48,8 @@ export default function AdminProductForm() {
 
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
-  const setImage = (i, val) => {
-    const imgs = [...form.images];
-    imgs[i] = { ...imgs[i], url: val };
-    set('images', imgs);
+  const handleImageSelect = (file) => {
+    set('imageFile', file);
   };
 
   const setSpec = (i, field, val) => {
@@ -63,21 +62,53 @@ export default function AdminProductForm() {
     e.preventDefault();
     setLoading(true);
     try {
-      const payload = {
-        ...form,
-        price: Number(form.price),
-        discountPrice: Number(form.discountPrice) || 0,
-        stock: Number(form.stock),
-        images: form.images.filter(img => img.url),
-        specifications: form.specifications.filter(s => s.key && s.value),
-        tags: form.tags ? form.tags.split(',').map(t => t.trim()) : [],
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
+
+      // Add basic fields
+      formData.append('name', form.name);
+      formData.append('description', form.description);
+      formData.append('shortDescription', form.shortDescription || '');
+      formData.append('price', form.price);
+      formData.append('discountPrice', form.discountPrice || '0');
+      formData.append('stock', form.stock);
+      formData.append('category', form.category);
+      formData.append('brand', form.brand || '');
+      formData.append('tags', form.tags);
+      formData.append('isFeatured', form.isFeatured.toString());
+      formData.append('isActive', form.isActive.toString());
+
+      // Add specifications as JSON string
+      formData.append('specifications', JSON.stringify(
+        form.specifications.filter(s => s.key && s.value)
+      ));
+
+      // Add image file if selected
+      if (form.imageFile) {
+        formData.append('image', form.imageFile);
+        console.log('Image file appended to FormData:', form.imageFile.name, form.imageFile.size, 'bytes');
+      }
+
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(key, ': File -', value.name, value.size, 'bytes');
+        } else {
+          console.log(key, ':', value);
+        }
+      }
+
+      const config = {
+        // Let axios set Content-Type automatically for FormData
       };
 
+      console.log('Sending request to:', isEdit ? `/products/${id}` : '/products');
+
       if (isEdit) {
-        await api.put(`/products/${id}`, payload);
+        await api.put(`/products/${id}`, formData, config);
         toast.success('Product updated!');
       } else {
-        await api.post('/products', payload);
+        await api.post('/products', formData, config);
         toast.success('Product created!');
       }
       navigate('/admin/products');
@@ -151,25 +182,15 @@ export default function AdminProductForm() {
           </div>
         </div>
 
-        {/* Images */}
-        <div className="card p-5 space-y-3">
-          <h2 className="font-semibold text-gray-800 border-b pb-2">Product Images</h2>
-          <p className="text-xs text-gray-400">Enter image URLs (from Unsplash, Cloudinary, etc.)</p>
-          {form.images.map((img, i) => (
-            <div key={i} className="flex gap-2 items-center">
-              <input className="input-field flex-1" placeholder={`Image ${i + 1} URL`} value={img.url}
-                onChange={e => setImage(i, e.target.value)} />
-              {img.url && <img src={img.url} alt="" className="w-10 h-10 rounded-lg object-cover border" onError={e => e.target.style.display = 'none'} />}
-              {form.images.length > 1 && (
-                <button type="button" onClick={() => set('images', form.images.filter((_, j) => j !== i))}
-                  className="text-red-400 hover:text-red-600 p-1"><FiTrash2 /></button>
-              )}
-            </div>
-          ))}
-          <button type="button" onClick={() => set('images', [...form.images, { url: '' }])}
-            className="flex items-center gap-1 text-sm text-blue-600 hover:underline mt-1">
-            <FiPlus /> Add Image
-          </button>
+        {/* Product Image */}
+        <div className="card p-5 space-y-4">
+          <h2 className="font-semibold text-gray-800 border-b pb-2">Product Image</h2>
+          <ImageUpload
+            onImageSelect={handleImageSelect}
+            currentImage={isEdit && form.images?.[0]?.url ? form.images[0].url : null}
+            label="Product Image"
+            required={!isEdit} // Required only for new products
+          />
         </div>
 
         {/* Specifications */}
