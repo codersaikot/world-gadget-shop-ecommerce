@@ -1,21 +1,14 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_URL || '/api';
-
 const api = axios.create({
-  baseURL,
+  baseURL: '/api',
   withCredentials: true,
-  timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    Pragma: 'no-cache',
-    Expires: '0',
-  },
 });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('wgs_token');
+  config.headers = config.headers || {};
+  config.headers['Content-Type'] = config.headers['Content-Type'] || 'application/json';
   if (token) config.headers.Authorization = `Bearer ${token}`;
   if (config.method?.toLowerCase() === 'get') {
     config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';

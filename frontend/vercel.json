@@ -3,11 +3,11 @@
   "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://world-gadget-api.onrender.com/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "https://world-gadget-api.onrender.com/api/$1"
     },
     {
-      "source": "/:path*",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
