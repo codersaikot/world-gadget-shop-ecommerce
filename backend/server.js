@@ -14,6 +14,8 @@ connectDB();
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 
@@ -25,26 +27,35 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// CORS
+// CORS must be applied before any routes.
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'https://your-frontend.vercel.app',
-  'https://your-frontend.vercel.app',
+  'https://world-gadget-shop-ecommerce.vercel.app',
+  process.env.FRONTEND_URL,
   'http://localhost:5173',
   'http://localhost:5174',
-];
-app.use(
-  cors({
-    origin(origin, callback) {
-      // Allow server-to-server tools and same-origin requests without an Origin header.
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+].filter(Boolean);
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow requests without an Origin header, such as server-to-server calls and health checks.
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -54,6 +65,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+app.get('/', (req, res) => {
+  res.send('API Running Successfully');
+});
 
 // API Routes
 app.use('/api/auth', require('./routes/authRoutes'));
