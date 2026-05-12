@@ -27,15 +27,24 @@ app.use('/api', limiter);
 
 // CORS
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
+  process.env.FRONTEND_URL || 'https://your-frontend.vercel.app',
+  'https://your-frontend.vercel.app',
+  'http://localhost:5173',
   'http://localhost:5174',
 ];
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Allow server-to-server tools and same-origin requests without an Origin header.
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
