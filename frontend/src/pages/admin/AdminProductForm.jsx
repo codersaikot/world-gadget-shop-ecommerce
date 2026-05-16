@@ -5,14 +5,14 @@ import api from '../../utils/api';
 import { createProduct } from '../../store/slices/otherSlices';
 import toast from 'react-hot-toast';
 import Spinner from '../../components/common/Spinner';
-import ImageUpload from '../../components/common/ImageUpload';
+import ImageUploader from '../../components/common/ImageUploader';
 import { FiPlus, FiTrash2, FiArrowLeft } from 'react-icons/fi';
 
 const defaultForm = {
   name: '', description: '', shortDescription: '',
   price: '', discountPrice: '', stock: '',
   category: '', brand: '',
-  imageFile: null, // For file upload
+  images: [],
   specifications: [{ key: '', value: '' }],
   tags: '',
   isFeatured: false, isActive: true,
@@ -41,7 +41,7 @@ export default function AdminProductForm() {
           category: p.category?._id || '',
           brand: p.brand?._id || '',
           tags: p.tags?.join(', ') || '',
-          imageFile: null, // Reset file input
+          images: Array.isArray(p.images) ? p.images : [],
           specifications: p.specifications?.length ? p.specifications : [{ key: '', value: '' }],
         });
         setFetchLoading(false);
@@ -51,10 +51,6 @@ export default function AdminProductForm() {
 
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
-  const handleImageSelect = (file) => {
-    set('imageFile', file);
-  };
-
   const setSpec = (i, field, val) => {
     const specs = [...form.specifications];
     specs[i] = { ...specs[i], [field]: val };
@@ -63,55 +59,34 @@ export default function AdminProductForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.images.length === 0) {
+      toast.error('Please upload at least one product image');
+      return;
+    }
+
     setLoading(true);
     try {
-      // Create FormData for multipart/form-data request
-      const formData = new FormData();
-
-      // Add basic fields
-      formData.append('name', form.name);
-      formData.append('description', form.description);
-      formData.append('shortDescription', form.shortDescription || '');
-      formData.append('price', form.price);
-      formData.append('discountPrice', form.discountPrice || '0');
-      formData.append('stock', form.stock);
-      formData.append('category', form.category);
-      formData.append('brand', form.brand || '');
-      formData.append('tags', form.tags);
-      formData.append('isFeatured', form.isFeatured.toString());
-      formData.append('isActive', form.isActive.toString());
-
-      // Add specifications as JSON string
-      formData.append('specifications', JSON.stringify(
-        form.specifications.filter(s => s.key && s.value)
-      ));
-
-      // Add image file if selected
-      if (form.imageFile) {
-        formData.append('image', form.imageFile);
-        console.log('Image file appended to FormData:', form.imageFile.name, form.imageFile.size, 'bytes');
-      }
-
-      console.log('FormData contents:');
-      for (let [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          console.log(key, ': File -', value.name, value.size, 'bytes');
-        } else {
-          console.log(key, ':', value);
-        }
-      }
-
-      const config = {
-        // Let axios set Content-Type automatically for FormData
+      const payload = {
+        name: form.name,
+        description: form.description,
+        shortDescription: form.shortDescription || '',
+        price: form.price,
+        discountPrice: form.discountPrice || '0',
+        stock: form.stock,
+        category: form.category,
+        brand: form.brand || '',
+        tags: form.tags,
+        isFeatured: form.isFeatured,
+        isActive: form.isActive,
+        images: form.images,
+        specifications: form.specifications.filter(s => s.key && s.value),
       };
 
-      console.log('Sending request to:', isEdit ? `/products/${id}` : '/products');
-
       if (isEdit) {
-        await api.put(`/products/${id}`, formData, config);
+        await api.put(`/products/${id}`, payload);
         toast.success('Product updated!');
       } else {
-        await dispatch(createProduct(formData)).unwrap();
+        await dispatch(createProduct(payload)).unwrap();
         toast.success('Product created!');
       }
       navigate('/admin/products');
@@ -185,14 +160,14 @@ export default function AdminProductForm() {
           </div>
         </div>
 
-        {/* Product Image */}
-        <div className="card p-5 space-y-4">
-          <h2 className="font-semibold text-gray-800 border-b pb-2">Product Image</h2>
-          <ImageUpload
-            onImageSelect={handleImageSelect}
-            currentImage={isEdit && form.images?.[0]?.url ? form.images[0].url : null}
-            label="Product Image"
-            required={!isEdit} // Required only for new products
+        <div className="card p-5">
+          <h2 className="font-semibold text-gray-800 border-b pb-2 mb-4">
+            Product Images <span className="text-red-500">*</span>
+          </h2>
+          <ImageUploader
+            images={form.images}
+            onChange={(imgs) => set('images', imgs)}
+            max={5}
           />
         </div>
 

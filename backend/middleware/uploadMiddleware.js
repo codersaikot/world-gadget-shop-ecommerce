@@ -6,7 +6,7 @@ const storage = multer.memoryStorage();
 
 // File filter to allow only images
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const allowedTypes = /jpeg|jpg|png|webp/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
 
@@ -30,20 +30,17 @@ const upload = multer({
 const uploadSingle = (req, res, next) => {
   const multerUpload = upload.single('image');
   multerUpload(req, res, (err) => {
-    console.log('Multer processing complete');
-    console.log('req.file after multer:', req.file ? 'Present' : 'Not present');
-    if (req.file) {
-      console.log('Multer file details:', {
-        fieldname: req.file.fieldname,
-        originalname: req.file.originalname,
-        encoding: req.file.encoding,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        buffer: req.file.buffer ? `Present (${req.file.buffer.length} bytes)` : 'Not present'
-      });
-    }
     if (err) {
-      console.error('Multer error:', err);
+      return next(err);
+    }
+    next();
+  });
+};
+
+const uploadMultiple = (req, res, next) => {
+  const multerUpload = upload.array('images', 5);
+  multerUpload(req, res, (err) => {
+    if (err) {
       return next(err);
     }
     next();
@@ -73,5 +70,6 @@ const handleUploadError = (error, req, res, next) => {
 
 module.exports = {
   uploadSingle,
+  uploadMultiple,
   handleUploadError,
 };

@@ -112,17 +112,6 @@ const getProduct = asyncHandler(async (req, res) => {
 // @access  Admin
 const createProduct = asyncHandler(async (req, res) => {
   setNoCacheHeaders(res);
-  console.log('Create product request received');
-  console.log('req.file:', req.file ? 'Present' : 'Not present');
-  if (req.file) {
-    console.log('File details:', {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      buffer: req.file.buffer ? 'Present' : 'Not present'
-    });
-  }
-  console.log('req.body:', req.body);
 
   let imageUrl = '';
   let publicId = '';
@@ -130,7 +119,6 @@ const createProduct = asyncHandler(async (req, res) => {
   // Handle file upload if present
   if (req.file) {
     try {
-      console.log('Attempting Cloudinary upload...');
       // Upload to Cloudinary using upload_stream for Buffer data
       const result = await uploadBufferToCloudinary(req.file.buffer, {
         folder: 'world-gadget-shop/products',
@@ -143,14 +131,7 @@ const createProduct = asyncHandler(async (req, res) => {
 
       imageUrl = result.secure_url;
       publicId = result.public_id;
-      console.log('Cloudinary upload successful:', { imageUrl, publicId });
     } catch (error) {
-      console.error('Cloudinary upload error details:', {
-        message: error.message,
-        http_code: error.http_code,
-        name: error.name,
-        stack: error.stack
-      });
       res.status(500);
       throw new Error(`Failed to upload image: ${error.message}`);
     }
@@ -159,7 +140,7 @@ const createProduct = asyncHandler(async (req, res) => {
   // Prepare product data
   const productData = {
     ...req.body,
-    images: imageUrl ? [{ url: imageUrl, public_id: publicId }] : [],
+    images: req.body.images,
   };
 
   // Parse JSON fields if they come as strings
@@ -168,6 +149,12 @@ const createProduct = asyncHandler(async (req, res) => {
   }
   if (typeof productData.tags === 'string') {
     productData.tags = productData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+  }
+  if (typeof productData.images === 'string') {
+    productData.images = JSON.parse(productData.images);
+  }
+  if (!Array.isArray(productData.images)) {
+    productData.images = imageUrl ? [{ url: imageUrl, public_id: publicId }] : [];
   }
 
   const product = await Product.create(productData);
@@ -185,18 +172,6 @@ const createProduct = asyncHandler(async (req, res) => {
 // @route   PUT /api/products/:id
 // @access  Admin
 const updateProduct = asyncHandler(async (req, res) => {
-  console.log('Update product request received for ID:', req.params.id);
-  console.log('req.file:', req.file ? 'Present' : 'Not present');
-  if (req.file) {
-    console.log('File details:', {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      buffer: req.file.buffer ? 'Present' : 'Not present'
-    });
-  }
-  console.log('req.body:', req.body);
-
   const product = await Product.findById(req.params.id);
 
   if (!product) {
@@ -210,7 +185,6 @@ const updateProduct = asyncHandler(async (req, res) => {
   // Handle file upload if present
   if (req.file) {
     try {
-      console.log('Attempting Cloudinary upload for update...');
       // Delete old image from Cloudinary if exists
       if (product.images && product.images.length > 0 && product.images[0].public_id) {
         await cloudinary.uploader.destroy(product.images[0].public_id);
@@ -228,14 +202,7 @@ const updateProduct = asyncHandler(async (req, res) => {
 
       imageUrl = result.secure_url;
       publicId = result.public_id;
-      console.log('Cloudinary upload successful for update:', { imageUrl, publicId });
     } catch (error) {
-      console.error('Cloudinary upload error details for update:', {
-        message: error.message,
-        http_code: error.http_code,
-        name: error.name,
-        stack: error.stack
-      });
       res.status(500);
       throw new Error(`Failed to upload image: ${error.message}`);
     }
@@ -250,6 +217,9 @@ const updateProduct = asyncHandler(async (req, res) => {
   }
   if (typeof updateData.tags === 'string') {
     updateData.tags = updateData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+  }
+  if (typeof updateData.images === 'string') {
+    updateData.images = JSON.parse(updateData.images);
   }
 
   // Update images if new image was uploaded

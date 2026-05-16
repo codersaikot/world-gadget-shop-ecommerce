@@ -80,7 +80,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
-          <p>© 2024 World Gadget Shop. All rights reserved.</p>
+          <p>© 2026 World Gadget Shop. All rights reserved.</p>
           <p>Made with ❤️ in Bangladesh</p>
         </div>
       </div>

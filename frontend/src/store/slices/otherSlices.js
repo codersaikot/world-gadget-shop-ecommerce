@@ -85,11 +85,9 @@ export const fetchProduct = createAsyncThunk('products/fetchOne', async (id, { r
   catch (err) { return rejectWithValue(err.response?.data?.message); }
 });
 
-export const createProduct = createAsyncThunk('products/create', async (formData, { rejectWithValue }) => {
+export const createProduct = createAsyncThunk('products/create', async (payload, { rejectWithValue }) => {
   try {
-    const res = await api.post('/products', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const res = await api.post('/products', payload);
     return res.data.data;
   } catch (err) {
     return rejectWithValue(err.response?.data?.message);
