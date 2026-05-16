@@ -33,7 +33,12 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:5173',
   'http://localhost:5174',
-].filter(Boolean);
+]
+  .filter(Boolean)
+  .map((origin) => origin.replace(/\/+$/, ''));
+
+const allowedOriginSet = new Set(allowedOrigins);
+const vercelPreviewPattern = /^https:\/\/world-gadget-shop(?:-ecommerce)?(?:-[a-z0-9-]+)?\.vercel\.app$/i;
 
 const corsOptions = {
   origin(origin, callback) {
@@ -42,11 +47,18 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    if (allowedOrigins.includes(origin)) {
+    const normalizedOrigin = origin.replace(/\/+$/, '');
+
+    if (allowedOriginSet.has(normalizedOrigin) || vercelPreviewPattern.test(normalizedOrigin)) {
       return callback(null, true);
     }
 
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
+    console.warn('CORS blocked request', {
+      origin: normalizedOrigin,
+      allowedOrigins,
+    });
+
+    return callback(new Error(`CORS blocked for origin: ${normalizedOrigin}`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
