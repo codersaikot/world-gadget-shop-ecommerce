@@ -38,7 +38,7 @@ const allowedOrigins = [
   .map((origin) => origin.replace(/\/+$/, ''));
 
 const allowedOriginSet = new Set(allowedOrigins);
-const vercelPreviewPattern = /^https:\/\/world-gadget-shop(?:-ecommerce)?(?:-[a-z0-9-]+)?\.vercel\.app$/i;
+const vercelPreviewPattern = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
 const corsOptions = {
   origin(origin, callback) {
@@ -61,7 +61,7 @@ const corsOptions = {
     return callback(new Error(`CORS blocked for origin: ${normalizedOrigin}`));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 204,
 };
